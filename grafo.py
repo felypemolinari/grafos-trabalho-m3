@@ -1,7 +1,3 @@
-import heapq
-from collections import deque
-
-
 class Grafo:
     def __init__(self, num_vertices, direcionado=False, ponderado=False, base=0):
         self.num_vertices = num_vertices
@@ -19,9 +15,6 @@ class Grafo:
         raise NotImplementedError
 
     def vizinhos(self, v):
-        raise NotImplementedError
-
-    def contem_aresta(self, origem, destino):
         raise NotImplementedError
 
     def peso(self, origem, destino):
@@ -54,9 +47,6 @@ class Grafo:
         for u, v, p in self.arestas():
             novo.somar_peso(u, v, p)
         return novo
-
-    def _vertices_validos(self, origem, destino):
-        return origem in self.vertices and destino in self.vertices
 
     @classmethod
     def ler_arquivo(cls, caminho):
@@ -111,11 +101,6 @@ class GrafoLista(Grafo):
     def vizinhos(self, v):
         return sorted(self.adj[v])
 
-    def contem_aresta(self, origem, destino):
-        if not self._vertices_validos(origem, destino):
-            return False
-        return any(d == destino for d, _ in self.adj[origem])
-
     def peso(self, origem, destino):
         for d, p in self.adj[origem]:
             if d == destino:
@@ -147,11 +132,6 @@ class GrafoMatriz(Grafo):
         linha = self.mat[v - self.base]
         return [(j + self.base, p) for j, p in enumerate(linha) if p is not None]
 
-    def contem_aresta(self, origem, destino):
-        if not self._vertices_validos(origem, destino):
-            return False
-        return self.mat[origem - self.base][destino - self.base] is not None
-
     def peso(self, origem, destino):
         return self.mat[origem - self.base][destino - self.base]
 
@@ -160,54 +140,6 @@ class GrafoMatriz(Grafo):
 
     def remover_aresta(self, origem, destino):
         self.mat[origem - self.base][destino - self.base] = None
-
-    def imprimir_matriz(self):
-        celulas = [[0 if p is None else p for p in linha] for linha in self.mat]
-        largura = max(len(str(x)) for x in self.vertices + [c for l in celulas for c in l])
-        print("Matriz de adjacencia:")
-        print(" " * (largura + 1) + " ".join(str(v).rjust(largura) for v in self.vertices))
-        for v, linha in zip(self.vertices, celulas):
-            print(str(v).rjust(largura) + " " + " ".join(str(c).rjust(largura) for c in linha))
-
-    def imprimir_como_lista(self):
-        print("Matriz impressa como lista de adjacencia:")
-        for v in self.vertices:
-            if self.ponderado:
-                viz = ", ".join(f"{d}(p={p})" for d, p in self.vizinhos(v))
-            else:
-                viz = ", ".join(str(d) for d, _ in self.vizinhos(v))
-            print(f"  {v} -> [{viz}]")
-
-
-def busca_em_largura(grafo, inicio):
-    visitado = {inicio}
-    ordem = []
-    fila = deque([inicio])
-    while fila:
-        atual = fila.popleft()
-        ordem.append(atual)
-        for vizinho, _ in grafo.vizinhos(atual):
-            if vizinho not in visitado:
-                visitado.add(vizinho)
-                fila.append(vizinho)
-    return ordem
-
-
-def busca_em_profundidade(grafo, inicio):
-    visitado = set()
-    ordem = []
-    pilha = [inicio]
-    while pilha:
-        atual = pilha.pop()
-        if atual in visitado:
-            continue
-        visitado.add(atual)
-        ordem.append(atual)
-        for vizinho, _ in reversed(grafo.vizinhos(atual)):
-            if vizinho not in visitado:
-                pilha.append(vizinho)
-    return ordem
-
 
 def caminho_busca_em_profundidade(grafo, inicio, fim):
     """Mesma busca em profundidade da M1, mas guardando o pai de cada vertice para
@@ -229,62 +161,3 @@ def caminho_busca_em_profundidade(grafo, inicio, fim):
             if peso > 0 and vizinho not in pai:
                 pilha.append((vizinho, atual))
     return None
-
-
-def dijkstra(grafo, inicio):
-    distancia = {v: float("inf") for v in grafo.vertices}
-    pai = {v: None for v in grafo.vertices}
-    distancia[inicio] = 0
-    fila = [(0, inicio)]
-    while fila:
-        d, atual = heapq.heappop(fila)
-        if d > distancia[atual]:
-            continue
-        for vizinho, peso in grafo.vizinhos(atual):
-            nova = d + peso
-            if nova < distancia[vizinho]:
-                distancia[vizinho] = nova
-                pai[vizinho] = atual
-                heapq.heappush(fila, (nova, vizinho))
-
-    caminho = {}
-    for v in grafo.vertices:
-        if distancia[v] == float("inf"):
-            caminho[v] = None
-            continue
-        cam = [v]
-        while cam[-1] != inicio:
-            cam.append(pai[cam[-1]])
-        caminho[v] = cam[::-1]
-    return distancia, caminho
-
-
-def executar(grafo, origem):
-    if isinstance(grafo, GrafoMatriz):
-        print(grafo.cabecalho())
-        grafo.imprimir_matriz()
-        grafo.imprimir_como_lista()
-    else:
-        print(grafo)
-    vizinhos = grafo.vizinhos(origem)
-    if vizinhos:
-        destino = vizinhos[0][0]
-        print(f"Contem aresta {origem}->{destino}? {grafo.contem_aresta(origem, destino)}")
-    print(f"Contem aresta {origem}->{origem}? {grafo.contem_aresta(origem, origem)}")
-    print(f"BFS a partir de {origem}: {busca_em_largura(grafo, origem)}")
-    print(f"DFS a partir de {origem}: {busca_em_profundidade(grafo, origem)}")
-    distancia, caminho = dijkstra(grafo, origem)
-    print(f"Dijkstra a partir de {origem}:")
-    for v in grafo.vertices:
-        print(f"  {v}: distancia={distancia[v]}  caminho={caminho[v]}")
-    print()
-
-
-if __name__ == "__main__":
-    import sys
-
-    arquivo = sys.argv[1] if len(sys.argv) > 1 else "grafo.txt"
-    for classe in (GrafoLista, GrafoMatriz):
-        g = classe.ler_arquivo(arquivo)
-        origem = int(sys.argv[2]) if len(sys.argv) > 2 else g.vertices[0]
-        executar(g, origem)

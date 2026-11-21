@@ -6,7 +6,8 @@ A base (classes `GrafoLista` / `GrafoMatriz` e leitura de arquivo) vem do trabal
 
 ## Arquivos
 
-- `grafo.py` – base da M2 (lista e matriz de adjacencia, BFS, DFS, Dijkstra) com os acrescimos:
+- `grafo.py` – base da M2 (lista e matriz de adjacencia, leitura de arquivo), so com o que este
+  projeto usa, mais os acrescimos:
   - `peso`, `definir_peso`, `remover_aresta`, `somar_peso`, `arestas`;
   - `copiar()` – copia **independente** do grafo (lista/matriz novas, sem compartilhar referencias);
   - `caminho_busca_em_profundidade(grafo, s, t)` – a DFS da M1 guardando o pai de cada vertice
